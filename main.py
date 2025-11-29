@@ -224,7 +224,7 @@ class TermMarquee:
         # 제목 (상단 여백 축소)
         lbl_title = tk.Label(
             self.drawer_panel,
-            text="설정",
+            text="설정(사용법은 하단에)",
             font=("Malgun Gothic", 12, "bold"),
             bg=bg_color,
             fg="#333333"
@@ -424,14 +424,14 @@ class TermMarquee:
         height = self.root.winfo_height()
         if height <= 1: return
         
-        # 창 높이의 12%로 설정, 최소 35px, 최대 60px
-        header_height = max(35, min(60, int(height * 0.12)))
+        # 창 높이의 9.6%로 설정 (기존 12%의 80%), 최소 28px, 최대 48px
+        header_height = max(28, min(48, int(height * 0.096)))
         self.header.config(height=header_height)
         
-        # 아이콘 크기도 타이틀 바 높이에 비례하여 조절
-        icon_size = max(14, min(22, int(header_height * 0.5)))
-        play_icon_size = max(13, min(20, int(header_height * 0.45)))
-        close_icon_size = max(13, min(19, int(header_height * 0.42)))
+        # 아이콘 크기도 타이틀 바 높이에 비례하여 조절 (80%로 축소)
+        icon_size = max(11, min(18, int(header_height * 0.5)))
+        play_icon_size = max(10, min(16, int(header_height * 0.45)))
+        close_icon_size = max(10, min(15, int(header_height * 0.42)))
         
         self.btn_settings.config(font=("Arial", icon_size))
         self.btn_play.config(font=("MS Gothic", play_icon_size, "bold"))
@@ -490,8 +490,8 @@ class TermMarquee:
         window_width = max(min_width, min(max_width, content_width))
         
         # 필요한 높이 계산
-        # 헤더 높이 (창 높이의 12%, 최소 35px, 최대 60px)
-        estimated_header_height = 45  # 초기 추정값
+        # 헤더 높이 (창 높이의 9.6%, 최소 28px, 최대 48px)
+        estimated_header_height = 36  # 초기 추정값 (기존 45의 80%)
         # 용어 높이
         term_height = 30
         # 설명 높이 (줄 수에 따라)
