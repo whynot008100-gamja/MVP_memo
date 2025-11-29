@@ -28,6 +28,7 @@ class TermMarquee:
         self.drawer_width = 240  # 설정창 너비 확장 (시인성 향상)
         self.is_paused = False 
         self.font_scale = 1.0
+        self.help_expanded = False  # 사용법이 펼쳐져 있는지 여부 (기본값: 닫힘)
         self.shuffled_indices = []
         self.shuffle_pos = 0
         self.last_index = 0  # 마지막으로 표시한 용어 인덱스
@@ -132,12 +133,13 @@ class TermMarquee:
         self.btn_settings.bind("<Button-1>", self.toggle_drawer)
 
         # 재생 버튼 (초기 크기는 apply_responsive_header에서 설정됨)
+        # 일시정지(⏸)와 재생(▶) 아이콘 크기를 동일하게 맞추기 위해 동일한 폰트 크기 사용
         self.btn_play = tk.Label(
             self.header,
             text="⏸",
             bg=current_theme['header'],
             fg="#555555",
-            font=("MS Gothic", 18, "bold"),
+            font=("MS Gothic", 20, "bold"),  # 설정 아이콘과 동일한 크기로 조정
             cursor="hand2",
         )
         self.btn_play.pack(side='left', padx=(6, 0), pady=2)
@@ -194,6 +196,8 @@ class TermMarquee:
         # 설명 영역도 드래그 선택 방지
         self.desc_text.bind("<Button-1>", lambda e: "break")
         self.desc_text.bind("<B1-Motion>", lambda e: "break")
+        # Text 위젯에도 클릭 애니메이션 추가
+        self.add_click_animation(self.desc_text)
 
         self.root.bind_all("<Control-MouseWheel>", self.manual_zoom)
 
@@ -217,6 +221,13 @@ class TermMarquee:
         self.add_button_feedback(self.btn_close, hover_bg="#d6c89a", active_bg="#c98f8f")
         self.add_button_feedback(self.term_label, hover_bg=current_theme['bg'], active_bg=current_theme['bg'])
         self.add_button_feedback(self.grip, hover_bg="#dddddd", active_bg="#cccccc")
+        
+        # 모든 클릭 가능한 위젯에 클릭 애니메이션 추가
+        self.add_click_animation(self.btn_settings)
+        self.add_click_animation(self.btn_play)
+        self.add_click_animation(self.btn_close)
+        self.add_click_animation(self.term_label)
+        self.add_click_animation(self.grip)
 
     def setup_drawer_ui(self):
         bg_color = "#f9f9f9"
@@ -224,7 +235,7 @@ class TermMarquee:
         # 제목 (상단 여백 축소)
         lbl_title = tk.Label(
             self.drawer_panel,
-            text="설정(사용법은 하단에)",
+            text="설정",
             font=("Malgun Gothic", 12, "bold"),
             bg=bg_color,
             fg="#333333"
@@ -287,6 +298,7 @@ class TermMarquee:
             btn.bind("<Button-1>", lambda e, n=name: self.change_theme(n))
             # 테마 칩에도 피드백 효과 적용
             self.add_button_feedback(btn, hover_bg=colors['header'], active_bg=colors['bg'])
+            self.add_click_animation(btn)
             col += 1
 
         # 구분선 (간격 축소)
@@ -296,14 +308,40 @@ class TermMarquee:
         help_section = tk.Frame(self.drawer_panel, bg=bg_color)
         help_section.pack(fill='both', expand=True, padx=12, pady=(0, 10))
         
+        # 사용법 제목 (클릭 가능)
+        help_title_frame = tk.Frame(help_section, bg=bg_color)
+        help_title_frame.pack(anchor="w", fill='x', pady=(0, 4))
+        
         help_title = tk.Label(
-            help_section,
+            help_title_frame,
             text="사용법",
-            font=("Malgun Gothic", 9, "bold"),
+            font=("Malgun Gothic", 12, "bold"),
             bg=bg_color,
-            fg="#555555"
+            fg="#555555",
+            cursor="hand2"
         )
-        help_title.pack(anchor="w", pady=(0, 4))
+        help_title.pack(side='left')
+        
+        # 클릭 아이콘 (▼/▶)
+        self.help_icon = tk.Label(
+            help_title_frame,
+            text="▶",  # 기본값: 닫혀있으므로 ▶
+            font=("Malgun Gothic", 10),
+            bg=bg_color,
+            fg="#888888",
+            cursor="hand2"
+        )
+        self.help_icon.pack(side='left', padx=(6, 0))
+        
+        # 클릭 이벤트 바인딩
+        help_title.bind("<Button-1>", self.toggle_help)
+        self.help_icon.bind("<Button-1>", self.toggle_help)
+        self.add_click_animation(help_title)
+        self.add_click_animation(self.help_icon)
+        
+        # 사용법 내용 컨테이너 (기본값: 닫혀있으므로 생성만 하고 표시하지 않음)
+        self.help_content = tk.Frame(help_section, bg=bg_color)
+        # 초기에는 표시하지 않음 (help_expanded = False)
         
         # 사용법 항목들을 각각 별도 Label로 생성하여 줄 간격 조절
         help_items = [
@@ -317,15 +355,16 @@ class TermMarquee:
         
         for item in help_items:
             lbl_item = tk.Label(
-                help_section,
+                self.help_content,
                 text=item,
-                font=("Malgun Gothic", 9),  # 8 → 9로 크기 증가
+                font=("Malgun Gothic", 9),
                 bg=bg_color,
                 fg="#666666",
                 anchor="w",
                 justify="left"
             )
             lbl_item.pack(anchor="w", pady=(0, 3))  # 각 줄 사이에 3px 패딩
+            self.add_click_animation(lbl_item)
 
     def toggle_drawer(self, event=None):
         current_w = self.root.winfo_width()
@@ -365,6 +404,42 @@ class TermMarquee:
         widget.bind("<Leave>", on_leave, add="+")
         widget.bind("<Button-1>", on_button, add="+")
 
+    def add_click_animation(self, widget):
+        """모든 위젯에 클릭 애니메이션 효과 추가"""
+        def on_click(e):
+            # 클릭 시 작은 이펙트 (약간 어둡게 → 원래대로)
+            try:
+                # 현재 배경색 저장
+                current_bg = widget.cget("bg")
+                
+                # 어두운 색으로 변경
+                widget.config(bg="#cccccc")
+                
+                # 100ms 후 원래 색으로 복구 (클로저 문제 해결을 위해 기본 인자 사용)
+                def restore_bg(bg_color=current_bg):
+                    try:
+                        widget.config(bg=bg_color)
+                    except:
+                        pass
+                
+                widget.after(100, restore_bg)
+            except:
+                # bg 속성이 없거나 변경할 수 없는 위젯은 스킵
+                pass
+        
+        widget.bind("<Button-1>", on_click, add="+")
+
+    def toggle_help(self, event=None):
+        """사용법 펼치기/접기"""
+        if self.help_expanded:
+            self.help_content.pack_forget()
+            self.help_icon.config(text="▶")
+            self.help_expanded = False
+        else:
+            self.help_content.pack(anchor="w", fill='x')
+            self.help_icon.config(text="▼")
+            self.help_expanded = True
+
     def toggle_play(self, event):
         if self.is_paused:
             self.is_paused = False
@@ -382,6 +457,9 @@ class TermMarquee:
         self.save_config()
         if not self.is_paused:
             self.update_term()
+        
+        # Combobox의 파란색 하이라이트 제거를 위해 포커스를 다른 곳으로 이동
+        self.root.focus_set()
 
     def change_theme(self, theme_name):
         self.config['theme_name'] = theme_name
@@ -430,7 +508,7 @@ class TermMarquee:
         
         # 아이콘 크기도 타이틀 바 높이에 비례하여 조절 (80%로 축소)
         icon_size = max(11, min(18, int(header_height * 0.5)))
-        play_icon_size = max(10, min(16, int(header_height * 0.45)))
+        play_icon_size = icon_size  # 일시정지와 재생 아이콘 크기를 동일하게
         close_icon_size = max(10, min(15, int(header_height * 0.42)))
         
         self.btn_settings.config(font=("Arial", icon_size))
