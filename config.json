@@ -1,0 +1,9 @@
+{
+  "bg_color": "#ffffcc",
+  "fg_color": "#000000",
+  "font_size": 19,
+  "interval_seconds": 5,
+  "width": 400,
+  "height": 250,
+  "theme_name": "Yellow"
+}
